@@ -1,4 +1,4 @@
-# Coffreo Project
+# RabbitMQ PHP Project
 
 This project consists of two PHP workers for asynchronous communication using RabbitMQ and includes a SQLite database for storing capitals data.
 

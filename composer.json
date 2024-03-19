@@ -1,4 +1,6 @@
 {
+    "type": "project",
+    "license": "proprietary",
     "require": {
         "php-amqplib/php-amqplib": "^3.6"
     }

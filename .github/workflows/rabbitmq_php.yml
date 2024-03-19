@@ -1,0 +1,59 @@
+name: PHP Project with RabbitMQ
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --hostname rabbitmq
+          --health-cmd "rabbitmqctl status"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, bcmath, soap
+          tools: composer, phpunit
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      # Here you might want to configure RabbitMQ, e.g., creating specific queues/exchanges
+      # - name: Prepare RabbitMQ
+      #   run: |
+      #     # Use rabbitmqadmin or similar tools to configure RabbitMQ
+      #     # Example: rabbitmqadmin declare queue name=my_queue durable=true
+
+      - name: Run PHPUnit tests
+        run: vendor/bin/phpunit
+
+    # Additional steps for your workflow (coding standards checks, static analysis, etc.) can be added here

@@ -24,27 +24,29 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out repository code
+        uses: actions/checkout@v2
 
-      - name: Set up PHP
+      - name: Set up PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, http  # Add any other extensions you need
-          tools: composer, pecl
+          extensions: mbstring, xml # Add other pre-compiled extensions here
+          tools: pecl
 
-      - name: Install PHP HTTP extension dependencies
+      - name: Install raphf extension (if not pre-compiled)
         run: |
-          sudo pecl install raphf propro
-          echo "extension=raphf.so" | sudo tee -a /etc/php/8.2/cli/php.ini
-          echo "extension=propro.so" | sudo tee -a /etc/php/8.2/cli/php.ini
-          sudo pecl install pecl_http
-          echo "extension=http.so" | sudo tee -a /etc/php/8.2/cli/php.ini
+          sudo pecl channel-update pecl.php.net
+          echo | sudo pecl install raphf
 
-      - name: Verify PHP version and extensions
+      - name: Install propro extension (if not pre-compiled)
         run: |
-          php -v
-          php -m
+          echo | sudo pecl install propro
+
+      - name: Enable extensions manually if not auto-enabled by pecl
+        run: |
+          echo "extension=raphf.so" | sudo tee -a /etc/php/8.2/cli/conf.d/30-raphf.ini
+          echo "extension=propro.so" | sudo tee -a /etc/php/8.2/cli/conf.d/30-propro.ini
 
       - name: Get Composer Cache Directory
         id: composer-cache

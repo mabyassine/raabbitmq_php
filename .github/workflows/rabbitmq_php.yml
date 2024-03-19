@@ -29,9 +29,22 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, bcmath, soap
-          tools: composer, phpunit
+          php-version: '8.2'
+          extensions: mbstring, xml, http  # Add any other extensions you need
+          tools: composer, pecl
+
+      - name: Install PHP HTTP extension dependencies
+        run: |
+          sudo pecl install raphf propro
+          echo "extension=raphf.so" | sudo tee -a /etc/php/8.2/cli/php.ini
+          echo "extension=propro.so" | sudo tee -a /etc/php/8.2/cli/php.ini
+          sudo pecl install pecl_http
+          echo "extension=http.so" | sudo tee -a /etc/php/8.2/cli/php.ini
+
+      - name: Verify PHP version and extensions
+        run: |
+          php -v
+          php -m
 
       - name: Get Composer Cache Directory
         id: composer-cache

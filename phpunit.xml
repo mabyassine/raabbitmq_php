@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php"
+         colors="true"
+         verbose="true"
+         stopOnFailure="false">
+    <php>
+        <ini name="error_reporting" value="-1" />
+        <env name="APP_ENV" value="testing"/>
+    </php>
+    <testsuites>
+        <testsuite name="Project Test Suite">
+            <directory suffix="Test.php">./tests</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src</directory>
+        </whitelist>
+    </filter>
+    <coverage processUncoveredFiles="true" cacheDirectory=".phpunit.cache">
+        <include>
+            <directory suffix=".php">./src</directory>
+        </include>
+        <report>
+            <clover outputFile="coverage/clover.xml"/>
+            <html outputDirectory="coverage/html"/>
+        </report>
+    </coverage>
+    <logging>
+        <junit outputFile="build/logs/junit.xml" logIncompleteSkipped="false"/>
+    </logging>
+</phpunit>

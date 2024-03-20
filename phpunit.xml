@@ -11,17 +11,16 @@
             <directory suffix="Test.php">./tests</directory>
         </testsuite>
     </testsuites>
-    <coverage cacheDirectory=".phpunit.cache"
-              processUncoveredFiles="true">
-        <include>
-            <directory suffix=".php">./src</directory>
-        </include>
+    <coverage cacheDirectory=".phpunit.cache">
+        <pathCoverage>
+            <directory suffix=".php">./src/Workers</directory>
+        </pathCoverage>
         <report>
             <clover outputFile="coverage/clover.xml"/>
             <html outputDirectory="coverage/html"/>
         </report>
     </coverage>
     <logging>
-        <junit outputFile="build/logs/junit.xml" logIncompleteSkipped="false"/>
+        <junit outputFile="build/logs/junit.xml"/>
     </logging>
 </phpunit>

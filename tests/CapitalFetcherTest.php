@@ -1,11 +1,11 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use ApiFetcher\CapitalFetcher;
+use Worker\ApiFetcher\CapitalFetcher;
 
 class CapitalFetcherTest extends TestCase
 {
-    private $capitalFetcher;
+    private CapitalFetcher $capitalFetcher;
 
     protected function setUp(): void
     {

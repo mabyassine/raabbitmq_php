@@ -1,6 +1,6 @@
 <?php
 
-namespace ApiFetcher;
+namespace Worker\ApiFetcher;
 
 use http\Exception\BadMessageException;
 

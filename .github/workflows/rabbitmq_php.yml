@@ -18,19 +18,15 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml # Add other necessary extensions
-          tools: pecl
+          extensions: mbstring, xml, amqp # Adjusted to include amqp extension
+          tools: pecl, composer
 
-      - name: Install and Enable Extensions
+      - name: Install and Enable Extensions (if needed)
         run: |
           sudo pecl install raphf || echo "Skipping raphf installation."
           sudo pecl install propro || echo "Skipping propro installation."
-          if [ -f "$(pecl config-get ext_dir)/raphf.so" ]; then
-            echo "extension=raphf.so" | sudo tee -a "$(php -r 'echo php_ini_loaded_file();')"
-          fi
-          if [ -f "$(pecl config-get ext_dir)/propro.so" ]; then
-            echo "extension=propro.so" | sudo tee -a "$(php -r 'echo php_ini_loaded_file();')"
-          fi
+          echo "extension=raphf.so" | sudo tee -a "$(php -r 'echo php_ini_loaded_file();')"
+          echo "extension=propro.so" | sudo tee -a "$(php -r 'echo php_ini_loaded_file();')"
 
       - name: Verify PHP and extensions
         run: |
@@ -40,9 +36,10 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress
-  test:
-    runs-on: ubuntu-latest
 
+  test:
+    needs: build
+    runs-on: ubuntu-latest
     services:
       rabbitmq:
         image: rabbitmq:3-management
@@ -57,7 +54,18 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP 8.2 (with required extensions for testing)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, amqp
+          tools: composer
+
+      - name: Install Composer dependencies (if not using workspace sharing)
+        run: composer install --prefer-dist --no-progress
+
       - name: Run PHPUnit tests
         run: vendor/bin/phpunit
-
-    # Additional steps for your workflow (coding standards checks, static analysis, etc.) can be added here

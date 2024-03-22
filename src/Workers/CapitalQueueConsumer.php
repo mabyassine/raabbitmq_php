@@ -2,15 +2,15 @@
 
 namespace Worker\Workers;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PDO;
 use Exception;
+use Worker\Setup\RabbitMQSetup;
 use Symfony\Component\Yaml\Yaml;
 
 class CapitalQueueConsumer
 {
-    private $connection;
+    private RabbitMQSetup $rabbitMQSetup;
     private $channel;
     private $pdo;
 
@@ -21,32 +21,31 @@ class CapitalQueueConsumer
         $this->initializeDatabase();
     }
 
-    private function setupRabbitMQ()
+    private function setupRabbitMQ(): void
     {
-        // Load configurations from YAML file
-        $config = Yaml::parseFile(__DIR__ . '/../../rabbitmq.yml');
-        $rabbitmqConfig = $config['rabbitmq'];
-
         try {
-            // Establish a connection to RabbitMQ server using configuration
-            $this->connection = new AMQPStreamConnection(
+            // Load configurations from YAML file
+            $config         = Yaml::parseFile(__DIR__ . '/../../rabbitmq.yml');
+            $rabbitmqConfig = $config['rabbitmq'];
+
+            // Initialize RabbitMQSetup with configurations and queue declaration
+            $this->rabbitMQSetup = new RabbitMQSetup(
                 $rabbitmqConfig['host'],
                 $rabbitmqConfig['port'],
                 $rabbitmqConfig['user'],
-                $rabbitmqConfig['pass']
+                $rabbitmqConfig['pass'],
+                'capital_queue', // Queue name
+                ['durable' => false, 'exclusive' => false, 'auto_delete' => false] // Example queue options
             );
-            $this->channel    = $this->connection->channel();
+            $this->channel       = $this->rabbitMQSetup->getChannel();
 
-            // Declare a queue named 'country_queue' for receiving country names
-            $this->channel->queue_declare('country_queue', false, false, false, false);
-
-            echo " [*] Waiting for messages in 'country_queue'. To exit press CTRL+C\n";
+            echo " [*] Waiting for messages in 'capital_queue'. To exit press CTRL+C\n";
         } catch (Exception $e) {
             die("Error connecting to RabbitMQ: " . $e->getMessage() . "\n");
         }
     }
 
-    private function setupDatabase()
+    private function setupDatabase(): void
     {
         $dbPath = __DIR__ . '/../../capitals.db';
         try {
@@ -57,7 +56,7 @@ class CapitalQueueConsumer
         }
     }
 
-    private function initializeDatabase()
+    private function initializeDatabase(): void
     {
         $createTableQuery = "CREATE TABLE IF NOT EXISTS capitals (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +70,7 @@ class CapitalQueueConsumer
         }
     }
 
-    public function startConsuming()
+    public function startConsuming(): void
     {
         $callback = function (AMQPMessage $msg) {
             $data        = json_decode($msg->body, true);
@@ -103,12 +102,6 @@ class CapitalQueueConsumer
             }
         }
 
-        $this->close();
-    }
-
-    public function close()
-    {
-        $this->channel->close();
-        $this->connection->close();
+        $this->rabbitMQSetup->close();
     }
 }

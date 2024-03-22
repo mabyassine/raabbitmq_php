@@ -2,35 +2,33 @@
 
 namespace Worker\Workers;
 
-use http\Exception\BadMessageException;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use Worker\Setup\RabbitMQSetup;
 use Symfony\Component\Yaml\Yaml;
 use Exception;
 
 class CountryQueueWorker
 {
-    private $connection;
+    private RabbitMQSetup $rabbitMQSetup;
     private $channel;
 
     public function __construct()
     {
-        // Load configurations from YAML file
-        $config = Yaml::parseFile(__DIR__ . '/../../rabbitmq.yml');
-        $rabbitmqConfig = $config['rabbitmq'];
-
         try {
-            // Establish a connection to RabbitMQ server using configuration
-            $this->connection = new AMQPStreamConnection(
+            // Load configurations from YAML file
+            $config         = Yaml::parseFile(__DIR__ . '/../../rabbitmq.yml');
+            $rabbitmqConfig = $config['rabbitmq'];
+
+            // Initialize RabbitMQSetup with configurations and queue declaration
+            $this->rabbitMQSetup = new RabbitMQSetup(
                 $rabbitmqConfig['host'],
                 $rabbitmqConfig['port'],
                 $rabbitmqConfig['user'],
-                $rabbitmqConfig['pass']
+                $rabbitmqConfig['pass'],
+                'country_queue', // Queue name
+                ['durable' => false, 'exclusive' => false, 'auto_delete' => false] // Example queue options
             );
-            $this->channel = $this->connection->channel();
-
-            // Declare a queue named 'country_queue' for receiving country names
-            $this->channel->queue_declare('country_queue', false, false, false, false);
+            $this->channel       = $this->rabbitMQSetup->getChannel();
 
             echo " [*] Waiting for messages in 'country_queue'. To exit press CTRL+C\n";
         } catch (Exception $e) {
@@ -38,7 +36,7 @@ class CountryQueueWorker
         }
     }
 
-    public function startConsuming()
+    public function startConsuming(): void
     {
         $callback = function (AMQPMessage $msg) {
             $data        = json_decode($msg->body, true);
@@ -74,32 +72,29 @@ class CountryQueueWorker
         }
 
         // Close the channel and connection when done
-        $this->close();
+        $this->rabbitMQSetup->close();
     }
 
+    /**
+     * @throws Exception
+     */
     private function fetchCapital(string $countryName): ?string
     {
         $url      = "https://restcountries.com/v3.1/name/" . urlencode($countryName);
         $response = file_get_contents($url);
         if ($response === false) {
-            throw new BadMessageException("API request failed");
+            throw new Exception("API request failed");
         }
 
         $data = json_decode($response, true);
         return $data[0]['capital'][0] ?? null;
     }
 
-    private function publishCapital(string $countryName, string $capital)
+    private function publishCapital(string $countryName, string $capital): void
     {
         $data = json_encode(['country_name' => $countryName, 'capital' => $capital]);
         $msg  = new AMQPMessage($data);
         $this->channel->basic_publish($msg, '', 'capital_queue');
         echo " [x] Sent capital info to 'capital_queue'\n";
-    }
-
-    public function close()
-    {
-        $this->channel->close();
-        $this->connection->close();
     }
 }

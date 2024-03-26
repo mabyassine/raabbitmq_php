@@ -32,7 +32,7 @@ This PHP project demonstrates asynchronous communication using RabbitMQ, focusin
 
 - **Running Workers:** To start the workers, use the commands:
     - For Country Consumer (Worker 1): ` ./console consume:country-queue`
-    - For Capital Consumer (Worker 2): ` ./console consume:country-queue`
+    - For Capital Consumer (Worker 2): ` ./console consume:capital-queue`
 
 ## Testing
 

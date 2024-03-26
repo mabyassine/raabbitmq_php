@@ -2,6 +2,7 @@
 
 namespace Worker\Setup;
 
+use Exception;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 class RabbitMQSetup
